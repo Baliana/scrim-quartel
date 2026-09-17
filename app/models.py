@@ -146,3 +146,13 @@ class WhatsappLog(Base):
     status_envio = Column(Enum(StatusEnvioEnum), nullable=False)
     erro = Column(Text, nullable=True)
     criado_em = Column(DateTime, default=datetime.utcnow)
+
+
+class cadastro(Base):
+    __tablename__ = "cadastro"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String(150), nullable=False)
+    email = Column(String(150), nullable=False, unique=True, index=True)
+    telefone = Column(String(20), nullable=True)  # formato E.164, ex: +5511999999999 (usado no WhatsApp)
+    criado_em = Column(DateTime, default=datetime.utcnow    )

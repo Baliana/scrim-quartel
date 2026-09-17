@@ -15,6 +15,12 @@ class LoginRequest(BaseModel):
     email: EmailStr
     senha: str
 
+class cadastroRequest(BaseModel):
+    nome: str = Field(min_length=2, max_length=150)
+    email: EmailStr
+    telefone: Optional[str] = Field(default=None, description="Formato E.164, ex: +5511999999999")
+    id: Optional[int] = None
+
 
 class TokenResponse(BaseModel):
     access_token: str
