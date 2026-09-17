@@ -1,9 +1,4 @@
 """
-Cria o primeiro usuário administrador do sistema.
-
-Necessário porque a rota POST /auth/registrar só pode ser chamada por um admin
-já autenticado — então é preciso semear o primeiro admin diretamente no banco.
-
 Uso:
     python seed_admin.py
 """
