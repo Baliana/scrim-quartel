@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # Adicione os IDs permitidos entre as chaves. A lista vazia bloqueia todos os
 # novos administradores, sem afetar cadastros de usuários comuns.
 IDS_MILITARES_ADMIN_AUTORIZADOS: frozenset[str] = frozenset({
-    "EB-021531957-5",
+    "021531957-5",
 })
 
 
