@@ -79,6 +79,8 @@ class Material(Base):
     nome = Column(String(150), nullable=False)
     descricao = Column(Text, nullable=True)
     codigo = Column(String(50), nullable=False, unique=True, index=True)
+    # Guarda somente o caminho público; o arquivo PNG fica em uploads/materiais.
+    imagem_url = Column(String(255), nullable=True)
     categoria_id = Column(Integer, ForeignKey("categorias.id"), nullable=False)
     quantidade_total = Column(Integer, nullable=False, default=0)
     tempo_maximo_dias = Column(Integer, nullable=False, default=7)
@@ -146,13 +148,3 @@ class WhatsappLog(Base):
     status_envio = Column(Enum(StatusEnvioEnum), nullable=False)
     erro = Column(Text, nullable=True)
     criado_em = Column(DateTime, default=datetime.utcnow)
-
-
-class cadastro(Base):
-    __tablename__ = "cadastro"
-
-    id = Column(Integer, primary_key=True, index=True)
-    nome = Column(String(150), nullable=False)
-    email = Column(String(150), nullable=False, unique=True, index=True)
-    telefone = Column(String(20), nullable=True)  # formato E.164, ex: +5511999999999 (usado no WhatsApp)
-    criado_em = Column(DateTime, default=datetime.utcnow    )

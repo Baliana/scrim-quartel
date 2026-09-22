@@ -2,6 +2,13 @@ import os
 from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# IDs militares autorizados a criar contas administrativas.
+# Adicione os IDs permitidos entre as chaves. A lista vazia bloqueia todos os
+# novos administradores, sem afetar cadastros de usuários comuns.
+IDS_MILITARES_ADMIN_AUTORIZADOS: frozenset[str] = frozenset({
+    "EB-021531957-5",
+})
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

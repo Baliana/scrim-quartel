@@ -1,6 +1,3 @@
--- Schema de referência (MySQL) — gerado a partir de app/models.py.
--- As tabelas são criadas automaticamente pelo SQLAlchemy (Base.metadata.create_all);
--- este arquivo serve apenas como documentação / consulta manual do banco.
 
 CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -26,6 +23,7 @@ CREATE TABLE materiais (
     nome VARCHAR(150) NOT NULL,
     descricao TEXT NULL,
     codigo VARCHAR(50) NOT NULL UNIQUE,
+    imagem_url VARCHAR(255) NULL COMMENT 'Caminho público do PNG do material',
     categoria_id INT NOT NULL,
     quantidade_total INT NOT NULL DEFAULT 0,
     tempo_maximo_dias INT NOT NULL DEFAULT 7,

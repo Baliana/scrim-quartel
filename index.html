@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>SCRIM | Controle de Materiais</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <section id="login" class="login">
+      <div class="login-card">
+        <div class="auth-brand" aria-label="SCRIM Sistema de Controle de Materiais">
+          <div class="brand-mark"><i>★</i></div>
+          <b>SCRIM</b><small>SISTEMA DE CONTROLE<br />DE MATERIAIS</small>
+        </div>
+        <h1>Bem-vindo!</h1>
+        <p>Acesse sua conta para continuar</p>
+        <form id="loginForm">
+          <label class="auth-input"><span>♟</span><input id="email" type="email" required placeholder="E-mail ou usuário" /></label>
+          <label class="auth-input"><span>♙</span><input id="senha" type="password" required placeholder="Senha" /><span>◉</span></label>
+          <a class="forgot-password" href="#senha">Esqueceu sua senha?</a>
+          <button>ENTRAR</button>
+        </form>
+        <div class="auth-divider"><span>ou</span></div>
+        <button type="button" class="signup-trigger" onclick="openSignup()">Criar conta</button>
+        <small id="error"></small>
+      </div>
+    </section>
+    <div id="app" class="hidden">
+      <aside>
+        <div class="logo side">✦ <b>SCRIM</b><small>MATERIAIS</small></div>
+        <div class="user">
+          <i id="initial">U</i>
+          <div>
+            <b id="userName">Usuário</b><small id="userType">Cliente</small>
+          </div>
+        </div>
+        <nav>
+          <button data-page="home">⌂ Dashboard</button
+          ><button data-page="materiais">▣ Materiais</button
+          ><button data-page="emprestimos">↕ Empréstimos</button
+          ><button class="admin" data-page="estoque">▤ Estoque</button
+          ><button class="admin" data-page="categorias">⌗ Categorias</button
+          ><button class="admin" data-page="usuarios">♙ Usuários</button
+          ><button data-page="perfil">⚙ Meu perfil</button>
+        </nav>
+        <button class="logout" onclick="logout()">↪ Sair</button>
+      </aside>
+      <main>
+        <header>
+          <span>SCRIM / <b id="title">DASHBOARD</b></span>
+          <div>🔔　<b id="topName">Usuário</b></div>
+        </header>
+        <div id="content"></div>
+      </main>
+    </div>
+    <div id="modal" class="hidden"></div>
+    <script src="app.js"></script>
+  </body>
+</html>

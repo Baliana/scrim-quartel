@@ -131,7 +131,13 @@ def criar_emprestimo(
     else:
         beneficiario_id = usuario_atual.id
 
-    material = db.query(Material).filter(Material.id == dados.material_id).first()
+    # Serializa retiradas do mesmo material e evita saldo negativo por concorrência.
+    material = (
+        db.query(Material)
+        .filter(Material.id == dados.material_id)
+        .with_for_update()
+        .first()
+    )
     if not material or not material.ativo:
         raise HTTPException(status_code=404, detail="Material não encontrado ou inativo")
 
@@ -213,6 +219,16 @@ def atualizar_status_emprestimo(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso restrito a administradores")
 
     emprestimo = _obter_emprestimo_ou_404(db, emprestimo_id)
+
+    # Alterar para "devolvido" diretamente não cria movimentação de estoque.
+    # A devolução física deve passar pela rota /devolver.
+    if dados.status != StatusEmprestimoEnum.cancelado:
+        raise HTTPException(
+            status_code=400,
+            detail="Use a rota /devolver para concluir uma devolucao fisica",
+        )
+    if emprestimo.status not in (StatusEmprestimoEnum.ativo, StatusEmprestimoEnum.atrasado):
+        raise HTTPException(status_code=400, detail="Este emprestimo ja foi encerrado")
 
     if dados.status == StatusEmprestimoEnum.cancelado and emprestimo.status not in (
         StatusEmprestimoEnum.devolvido, StatusEmprestimoEnum.cancelado,

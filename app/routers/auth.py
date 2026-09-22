@@ -2,11 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Usuario
+from app.config import IDS_MILITARES_ADMIN_AUTORIZADOS
+from app.models import Usuario, TipoUsuarioEnum
 from app.schemas import LoginRequest, TokenResponse, UsuarioCreate, UsuarioOut
 from app.auth import (
     verificar_senha, gerar_hash_senha, criar_token_acesso,
-    get_current_user, exigir_admin,
+    get_current_user,
 )
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
@@ -33,8 +34,15 @@ def login(dados: LoginRequest, db: Session = Depends(get_db)):
 def registrar_usuario(
     dados: UsuarioCreate,
     db: Session = Depends(get_db),
-    _admin: Usuario = Depends(exigir_admin),  # apenas admin pode criar novos usuários (clientes ou admins)
 ):
+    # A regra é aplicada no servidor para impedir elevação de privilégio por
+    # alteração manual da requisição enviada pelo navegador.
+    if dados.tipo == TipoUsuarioEnum.admin and dados.id_militar not in IDS_MILITARES_ADMIN_AUTORIZADOS:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="ID militar nao autorizado para criar conta de administrador",
+        )
+
     existente = db.query(Usuario).filter(Usuario.email == dados.email).first()
     if existente:
         raise HTTPException(status_code=400, detail="E-mail já cadastrado")

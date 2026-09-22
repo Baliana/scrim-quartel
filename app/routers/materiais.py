@@ -1,6 +1,8 @@
+from pathlib import Path
 from typing import Optional
+from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
@@ -18,6 +20,9 @@ from app.auth import get_current_user, exigir_admin
 router = APIRouter(prefix="/materiais", tags=["Materiais"])
 
 STATUS_EMPRESTADO = (StatusEmprestimoEnum.ativo, StatusEmprestimoEnum.atrasado)
+MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+MATERIAIS_UPLOAD_DIR = Path(__file__).resolve().parents[2] / "uploads" / "materiais"
 
 
 # ============================================================
@@ -154,6 +159,38 @@ def atualizar_material(
     return material
 
 
+@router.post("/{material_id}/imagem", response_model=MaterialOut)
+async def enviar_imagem_material(
+    material_id: int,
+    imagem: UploadFile = File(..., description="Imagem PNG de ate 5 MB"),
+    db: Session = Depends(get_db),
+    _admin: Usuario = Depends(exigir_admin),
+):
+    """Salva uma imagem PNG segura e associa seu caminho ao material."""
+    material = db.query(Material).filter(Material.id == material_id).first()
+    if not material:
+        raise HTTPException(status_code=404, detail="Material não encontrado")
+
+    if imagem.content_type not in {"image/png", "image/x-png"}:
+        raise HTTPException(status_code=400, detail="Envie somente arquivos PNG")
+
+    conteudo = await imagem.read(MAX_IMAGE_SIZE_BYTES + 1)
+    if len(conteudo) > MAX_IMAGE_SIZE_BYTES:
+        raise HTTPException(status_code=400, detail="A imagem deve ter no máximo 5 MB")
+    if not conteudo.startswith(PNG_SIGNATURE):
+        raise HTTPException(status_code=400, detail="O arquivo enviado não é um PNG válido")
+
+    # UUID impede colisão de nomes e nunca usa o nome original enviado pelo navegador.
+    MATERIAIS_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    nome_arquivo = f"{uuid4().hex}.png"
+    (MATERIAIS_UPLOAD_DIR / nome_arquivo).write_bytes(conteudo)
+
+    material.imagem_url = f"/uploads/materiais/{nome_arquivo}"
+    db.commit()
+    db.refresh(material)
+    return material
+
+
 @router.delete("/{material_id}", status_code=status.HTTP_204_NO_CONTENT)
 def desativar_material(
     material_id: int,
@@ -194,17 +231,27 @@ def registrar_movimentacao(
             detail="Saídas e devoluções são registradas automaticamente via /emprestimos",
         )
 
+    # Nunca reduza o total abaixo das unidades que continuam emprestadas.
+    # Sem esta regra, uma perda/ajuste poderia gerar disponibilidade negativa.
+    emprestada = _quantidade_emprestada(db, material.id)
+    nova_quantidade_total = material.quantidade_total
     if dados.tipo == TipoMovimentacaoEnum.entrada:
-        material.quantidade_total += dados.quantidade
+        nova_quantidade_total += dados.quantidade
     elif dados.tipo in (TipoMovimentacaoEnum.perda, TipoMovimentacaoEnum.danificado):
-        if dados.quantidade > material.quantidade_total:
-            raise HTTPException(status_code=400, detail="Quantidade maior que o total em estoque")
-        material.quantidade_total -= dados.quantidade
+        nova_quantidade_total -= dados.quantidade
     elif dados.tipo == TipoMovimentacaoEnum.ajuste:
         # Para "ajuste", `quantidade` representa a NOVA quantidade_total (contagem física),
         # não um delta. Útil para corrigir divergências de inventário. O `motivo` deve
         # explicar a divergência encontrada.
-        material.quantidade_total = dados.quantidade
+        nova_quantidade_total = dados.quantidade
+
+    if nova_quantidade_total < emprestada:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Operação deixaria o estoque abaixo das {emprestada} unidades emprestadas",
+        )
+
+    material.quantidade_total = nova_quantidade_total
 
     movimentacao = MovimentacaoEstoque(
         material_id=material.id,

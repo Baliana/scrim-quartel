@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator, model_validator
 
 from app.models import (
     TipoUsuarioEnum, StatusEmprestimoEnum, TipoMovimentacaoEnum,
@@ -36,6 +36,20 @@ class UsuarioCreate(BaseModel):
     senha: str = Field(min_length=6)
     telefone: Optional[str] = Field(default=None, description="Formato E.164, ex: +5511999999999")
     tipo: TipoUsuarioEnum = TipoUsuarioEnum.cliente
+    id_militar: Optional[str] = Field(default=None, max_length=80)
+
+    @field_validator("id_militar")
+    @classmethod
+    def normalizar_id_militar(cls, id_militar: Optional[str]) -> Optional[str]:
+        if id_militar is None or not id_militar.strip():
+            return None
+        return id_militar.strip().upper()
+
+    @model_validator(mode="after")
+    def exigir_id_militar_do_admin(self):
+        if self.tipo == TipoUsuarioEnum.admin and not self.id_militar:
+            raise ValueError("ID militar e obrigatorio para administrador")
+        return self
 
 
 class UsuarioUpdate(BaseModel):
